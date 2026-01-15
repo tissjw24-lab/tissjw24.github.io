@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="파이썬 기초 학습을 위한 5개의 샘플 코드 모음입니다. 변수, 조건문, 반복문, 함수, 자료구조를 배워보세요.">
+    <title>파이썬 기초 샘플 코드 | Python Basics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent-blue: #4f8cff;
+            --accent-purple: #a855f7;
+            --accent-green: #22c55e;
+            --accent-orange: #f97316;
+            --accent-pink: #ec4899;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #4f8cff 0%, #a855f7 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(79, 140, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(34, 197, 94, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 3rem 2rem;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-2);
+        }
+
+        .python-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Section title */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2.5rem 0 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--gradient-2);
+            border-radius: 2px;
+        }
+
+        /* File cards */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .file-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .file-card:nth-child(1)::before { background: var(--accent-blue); }
+        .file-card:nth-child(2)::before { background: var(--accent-purple); }
+        .file-card:nth-child(3)::before { background: var(--accent-green); }
+        .file-card:nth-child(4)::before { background: var(--accent-orange); }
+        .file-card:nth-child(5)::before { background: var(--accent-pink); }
+
+        .file-card:hover {
+            transform: translateX(8px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .file-card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .file-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .file-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .file-card:nth-child(1) .file-number { background: rgba(79, 140, 255, 0.2); color: var(--accent-blue); }
+        .file-card:nth-child(2) .file-number { background: rgba(168, 85, 247, 0.2); color: var(--accent-purple); }
+        .file-card:nth-child(3) .file-number { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+        .file-card:nth-child(4) .file-number { background: rgba(249, 115, 22, 0.2); color: var(--accent-orange); }
+        .file-card:nth-child(5) .file-number { background: rgba(236, 72, 153, 0.2); color: var(--accent-pink); }
+
+        .file-name {
+            font-family: 'Fira Code', monospace;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .file-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            padding-left: calc(36px + 1rem);
+        }
+
+        /* How to run section */
+        .run-section {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .run-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .code-block {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-line {
+            display: block;
+            padding: 0.25rem 0;
+            transition: background 0.2s;
+        }
+
+        .code-line:hover {
+            background: rgba(79, 140, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .code-keyword {
+            color: var(--accent-green);
+        }
+
+        .code-file {
+            color: var(--accent-blue);
+        }
+
+        /* Note */
+        .note {
+            margin-top: 1.5rem;
+            padding: 1rem 1.25rem;
+            background: rgba(249, 115, 22, 0.1);
+            border-left: 3px solid var(--accent-orange);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .note strong {
+            color: var(--accent-orange);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        footer .emoji {
+            font-size: 1.5rem;
+            display: inline-block;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .file-card {
+                padding: 1.25rem;
+            }
+
+            .file-description {
+                padding-left: 0;
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    
+    <main class="container">
+        <header>
+            <div class="python-icon">🐍</div>
+            <h1>파이썬 기초 샘플 코드</h1>
+            <p class="subtitle">이 폴더에는 파이썬 학습을 위한 5개의 기초 파일이 포함되어 있습니다.</p>
+        </header>
+
+        <h2 class="section-title">파일 목록</h2>
+        
+        <div class="file-list">
+            <article class="file-card">
+                <a href="01_basics.py">
+                    <div class="file-header">
+                        <div class="file-number">01</div>
+                        <span class="file-name">01_basics.py</span>
+                    </div>
+                    <p class="file-description">변수, 데이터 타입, 출력 및 기본 연산</p>
+                </a>
+            </article>
+
+            <article class="file-card">
+                <a href="02_conditionals.py">
+                    <div class="file-header">
+                        <div class="file-number">02</div>
+                        <span class="file-name">02_conditionals.py</span>
+                    </div>
+                    <p class="file-description">if/elif/else 조건문 사용법</p>
+                </a>
+            </article>
+
+            <article class="file-card">
+                <a href="03_loops.py">
+                    <div class="file-header">
+                        <div class="file-number">03</div>
+                        <span class="file-name">03_loops.py</span>
+                    </div>
+                    <p class="file-description">for 반복문과 while 반복문</p>
+                </a>
+            </article>
+
+            <article class="file-card">
+                <a href="04_functions.py">
+                    <div class="file-header">
+                        <div class="file-number">04</div>
+                        <span class="file-name">04_functions.py</span>
+                    </div>
+                    <p class="file-description">함수 정의, 매개변수, 반환값(return)</p>
+                </a>
+            </article>
+
+            <article class="file-card">
+                <a href="05_data_structures.py">
+                    <div class="file-header">
+                        <div class="file-number">05</div>
+                        <span class="file-name">05_data_structures.py</span>
+                    </div>
+                    <p class="file-description">리스트(List)와 딕셔너리(Dictionary) 기초</p>
+                </a>
+            </article>
+        </div>
+
+        <section class="run-section">
+            <h2>⚡ 실행 방법</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                각 파일은 파이썬이 설치된 환경에서 터미널(명령 프롬프트)을 통해 실행할 수 있습니다.
+            </p>
+            <div class="code-block">
+                <code class="code-line"><span class="code-keyword">python</span> <span class="code-file">01_basics.py</span></code>
+                <code class="code-line"><span class="code-keyword">python</span> <span class="code-file">02_conditionals.py</span></code>
+                <code class="code-line"><span class="code-keyword">python</span> <span class="code-file">03_loops.py</span></code>
+                <code class="code-line"><span class="code-keyword">python</span> <span class="code-file">04_functions.py</span></code>
+                <code class="code-line"><span class="code-keyword">python</span> <span class="code-file">05_data_structures.py</span></code>
+            </div>
+            <div class="note">
+                <strong>💡 참고:</strong> <code>02_conditionals.py</code>는 실행 시 점수를 입력해야 결과를 볼 수 있습니다.
+            </div>
+        </section>
+
+        <footer>
+            <span class="emoji">🎉</span> 즐거운 파이썬 공부 되세요!
+        </footer>
+    </main>
+</body>
+</html>
