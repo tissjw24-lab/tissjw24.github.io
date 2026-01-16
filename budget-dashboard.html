@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예산 관리 대시보드</title>
+    <meta name="description" content="국고, 교육청, 시청 예산을 효율적으로 관리하는 통합 대시보드">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Color Palette - Bright Theme */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+
+            /* Source Colors */
+            --color-treasury: #3b82f6;
+            --color-treasury-light: #dbeafe;
+            --color-treasury-dark: #1e40af;
+
+            --color-education: #10b981;
+            --color-education-light: #d1fae5;
+            --color-education-dark: #047857;
+
+            --color-city: #f59e0b;
+            --color-city-light: #fef3c7;
+            --color-city-dark: #d97706;
+
+            /* Text Colors */
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+
+            /* Border & Shadow */
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+            /* Spacing */
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 0.75rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: var(--spacing-lg);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: var(--spacing-xl);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 50%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .summary-card {
+            background: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            transition: height 0.3s ease;
+        }
+
+        .summary-card.treasury::before {
+            background: linear-gradient(90deg, var(--color-treasury), var(--color-treasury-dark));
+        }
+
+        .summary-card.education::before {
+            background: linear-gradient(90deg, var(--color-education), var(--color-education-dark));
+        }
+
+        .summary-card.city::before {
+            background: linear-gradient(90deg, var(--color-city), var(--color-city-dark));
+        }
+
+        .summary-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .summary-card:hover::before {
+            height: 6px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .treasury .card-icon {
+            background: var(--color-treasury-light);
+            color: var(--color-treasury-dark);
+        }
+
+        .education .card-icon {
+            background: var(--color-education-light);
+            color: var(--color-education-dark);
+        }
+
+        .city .card-icon {
+            background: var(--color-city-light);
+            color: var(--color-city-dark);
+        }
+
+        .card-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: var(--spacing-sm);
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.6s ease;
+        }
+
+        .treasury .progress-fill {
+            background: linear-gradient(90deg, var(--color-treasury), var(--color-treasury-dark));
+        }
+
+        .education .progress-fill {
+            background: linear-gradient(90deg, var(--color-education), var(--color-education-dark));
+        }
+
+        .city .progress-fill {
+            background: linear-gradient(90deg, var(--color-city), var(--color-city-dark));
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .chart-card {
+            background: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Items Section */
+        .items-section {
+            background: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .filter-tab:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .filter-tab.active {
+            color: white;
+            border-color: transparent;
+        }
+
+        .filter-tab.active.treasury {
+            background: var(--color-treasury);
+        }
+
+        .filter-tab.active.education {
+            background: var(--color-education);
+        }
+
+        .filter-tab.active.city {
+            background: var(--color-city);
+        }
+
+        /* Items Grid */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .item-card {
+            background: var(--bg-secondary);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .item-card:hover {
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .item-card.active {
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .item-card.treasury.active {
+            border-color: var(--color-treasury);
+        }
+
+        .item-card.education.active {
+            border-color: var(--color-education);
+        }
+
+        .item-card.city.active {
+            border-color: var(--color-city);
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+            font-size: 0.9rem;
+        }
+
+        .item-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .item-budget,
+        .item-spent {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            color: var(--text-tertiary);
+            font-size: 0.7rem;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        /* Detail Panel */
+        .detail-panel {
+            background: var(--bg-primary);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .detail-panel.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .detail-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .detail-close {
+            background: var(--bg-tertiary);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .detail-close:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .detail-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .summary-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Transaction Table */
+        .transaction-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .transaction-table thead {
+            background: var(--bg-secondary);
+        }
+
+        .transaction-table th {
+            padding: var(--spacing-md);
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .transaction-table th:first-child {
+            border-top-left-radius: var(--radius-md);
+        }
+
+        .transaction-table th:last-child {
+            border-top-right-radius: var(--radius-md);
+        }
+
+        .transaction-table td {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+        .transaction-table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .transaction-date {
+            color: var(--text-secondary);
+        }
+
+        .transaction-description {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .amount-negative {
+            color: #ef4444;
+        }
+
+        .amount-positive {
+            color: var(--color-education);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: var(--spacing-md);
+            }
+
+            header {
+                padding: var(--spacing-lg);
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-tabs {
+                width: 100%;
+            }
+
+            .filter-tab {
+                flex: 1;
+                text-align: center;
+            }
+
+            .detail-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .transaction-table {
+                font-size: 0.75rem;
+            }
+
+            .transaction-table th,
+            .transaction-table td {
+                padding: var(--spacing-sm);
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--bg-tertiary);
+            border-radius: 50%;
+            border-top-color: var(--color-treasury);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Year-over-Year Comparison Section */
+        .yoy-section {
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #e0e7ff 100%);
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 2px solid #93c5fd;
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .yoy-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .yoy-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        .yoy-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-treasury), var(--color-treasury-dark));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .yoy-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .yoy-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .yoy-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .yoy-stat-card {
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .yoy-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .yoy-stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-treasury);
+        }
+
+        /* New Items Table */
+        .new-items-table {
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table thead {
+            background: var(--bg-secondary);
+        }
+
+        .comparison-table th {
+            padding: var(--spacing-md);
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .comparison-table th:last-child,
+        .comparison-table td:last-child {
+            text-align: right;
+        }
+
+        .comparison-table tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .comparison-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .comparison-table tbody tr.new-item {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%);
+        }
+
+        .comparison-table tbody tr.new-item:hover {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%);
+        }
+
+        .comparison-table tbody tr.surge-item {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%);
+        }
+
+        .comparison-table tbody tr.surge-item:hover {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.04) 100%);
+        }
+
+        .comparison-table td {
+            padding: var(--spacing-md);
+            font-size: 0.875rem;
+        }
+
+        .item-name-cell {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .source-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: var(--spacing-xs);
+        }
+
+        .source-badge.treasury {
+            background: var(--color-treasury-light);
+            color: var(--color-treasury-dark);
+        }
+
+        .source-badge.education {
+            background: var(--color-education-light);
+            color: var(--color-education-dark);
+        }
+
+        .source-badge.city {
+            background: var(--color-city-light);
+            color: var(--color-city-dark);
+        }
+
+        .new-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--color-education);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .warning-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: #fef3c7;
+            color: #d97706;
+            border-radius: 50%;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-left: var(--spacing-xs);
+            cursor: help;
+            transition: all 0.2s ease;
+        }
+
+        .warning-icon:hover {
+            background: #fde68a;
+            transform: scale(1.1);
+        }
+
+        .amount-cell {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .percentage-cell {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .yoy-section {
+                padding: var(--spacing-lg);
+            }
+
+            .yoy-title {
+                font-size: 1.25rem;
+            }
+
+            .yoy-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-table {
+                font-size: 0.75rem;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: var(--spacing-sm);
+            }
+
+            .source-badge,
+            .new-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.4rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>📊 예산 관리 대시보드</h1>
+            <p class="subtitle">국고, 교육청, 시청 통합 예산 관리 시스템</p>
+        </header>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card treasury">
+                <div class="card-header">
+                    <span class="card-title">국고</span>
+                    <div class="card-icon">💼</div>
+                </div>
+                <div class="card-amount" id="treasury-total">0원</div>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="info-label">집행액</span>
+                        <span class="info-value" id="treasury-spent">0원</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">잔액</span>
+                        <span class="info-value" id="treasury-remaining">0원</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="treasury-progress" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="summary-card education">
+                <div class="card-header">
+                    <span class="card-title">교육청</span>
+                    <div class="card-icon">🎓</div>
+                </div>
+                <div class="card-amount" id="education-total">0원</div>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="info-label">집행액</span>
+                        <span class="info-value" id="education-spent">0원</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">잔액</span>
+                        <span class="info-value" id="education-remaining">0원</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="education-progress" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="summary-card city">
+                <div class="card-header">
+                    <span class="card-title">시청</span>
+                    <div class="card-icon">🏛️</div>
+                </div>
+                <div class="card-amount" id="city-total">0원</div>
+                <div class="card-info">
+                    <div class="info-item">
+                        <span class="info-label">집행액</span>
+                        <span class="info-value" id="city-spent">0원</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">잔액</span>
+                        <span class="info-value" id="city-remaining">0원</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="city-progress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Year-over-Year Comparison Section -->
+        <div class="yoy-section" id="yoySection">
+            <div class="yoy-header">
+                <div class="yoy-icon">📊</div>
+                <div>
+                    <h2 class="yoy-title">올해 신규 추가된 지출 내역</h2>
+                    <p class="yoy-subtitle">2024년 대비 2025년 신규 항목 및 급증 항목 분석</p>
+                </div>
+            </div>
+
+            <div class="yoy-stats">
+                <div class="yoy-stat-card">
+                    <div class="yoy-stat-label">신규 항목</div>
+                    <div class="yoy-stat-value" id="newItemsCount">0</div>
+                </div>
+                <div class="yoy-stat-card">
+                    <div class="yoy-stat-label">신규 항목 총액</div>
+                    <div class="yoy-stat-value" id="newItemsTotal">0원</div>
+                </div>
+                <div class="yoy-stat-card">
+                    <div class="yoy-stat-label">급증 항목</div>
+                    <div class="yoy-stat-value" id="surgeItemsCount" style="color: var(--color-city);">0</div>
+                </div>
+            </div>
+
+            <div class="new-items-table">
+                <div class="table-header">📋 항목별 상세 내역</div>
+                <div style="overflow-x: auto;">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>항목명</th>
+                                <th>출처</th>
+                                <th style="text-align: right;">2025년 지출액</th>
+                                <th style="text-align: right;">예산 비중</th>
+                                <th style="text-align: right;">상태</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparisonTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h2 class="chart-title">📈 월별 총 지출 추이</h2>
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h2 class="chart-title">📊 출처별 예산 비중</h2>
+                <div class="chart-container">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="items-section">
+            <div class="section-header">
+                <h2 class="section-title">예산 항목</h2>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-source="all">전체</button>
+                    <button class="filter-tab treasury" data-source="treasury">국고</button>
+                    <button class="filter-tab education" data-source="education">교육청</button>
+                    <button class="filter-tab city" data-source="city">시청</button>
+                </div>
+            </div>
+
+            <div class="items-grid" id="itemsGrid"></div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header">
+                <h3 class="detail-title" id="detailTitle"></h3>
+                <button class="detail-close" onclick="closeDetail()">×</button>
+            </div>
+
+            <div class="detail-summary">
+                <div class="summary-item">
+                    <div class="summary-label">예산</div>
+                    <div class="summary-amount" id="detail-budget">0원</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">집행액</div>
+                    <div class="summary-amount" id="detail-spent">0원</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">잔액</div>
+                    <div class="summary-amount" id="detail-remaining">0원</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">집행률</div>
+                    <div class="summary-amount" id="detail-rate">0%</div>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom: var(--spacing-md); color: var(--text-primary); font-size: 1rem;">지출 내역</h4>
+            <div style="overflow-x: auto;">
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>날짜</th>
+                            <th>내용</th>
+                            <th style="text-align: right;">금액</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 2024년 데이터 (전년도)
+        const budgetData2024 = {
+            treasury: {
+                name: '국고',
+                items: [
+                    { name: '교직원 인건비', budget: 145000000, spent: 120000000 },
+                    { name: '교육활동 운영비', budget: 40000000, spent: 35000000 },
+                    { name: '학교시설 유지보수', budget: 33000000, spent: 28000000 },
+                    { name: '교육자료 구입비', budget: 22000000, spent: 19000000 },
+                    { name: '학생복지 지원비', budget: 28000000, spent: 25000000 },
+                    { name: '특별교육 프로그램', budget: 18000000, spent: 15000000 },
+                    { name: '교육정보화 사업', budget: 25000000, spent: 22000000 },
+                    { name: '교육환경 개선비', budget: 30000000, spent: 27000000 },
+                    { name: '안전관리비', budget: 16000000, spent: 14000000 },
+                    { name: '교육연구비', budget: 13000000, spent: 11000000 },
+                    { name: '학교운영비', budget: 20000000, spent: 18000000 },
+                    { name: '교직원 연수비', budget: 10000000, spent: 9000000 },
+                    { name: '학생건강 관리비', budget: 14000000, spent: 12000000 },
+                    { name: '도서구입비', budget: 9000000, spent: 8000000 },
+                    { name: '실험실습비', budget: 12000000, spent: 10000000 },
+                    { name: '체육활동비', budget: 10000000, spent: 8500000 },
+                    { name: '예술교육비', budget: 8000000, spent: 7000000 },
+                    { name: '진로교육비', budget: 7000000, spent: 6000000 }
+                    // 국제교육 교류비, 기타 교육지원비는 2024년에 없었음
+                ]
+            },
+            education: {
+                name: '교육청',
+                items: [
+                    { name: '교육청 운영비', budget: 115000000, spent: 100000000 },
+                    { name: '교원 연수 지원', budget: 38000000, spent: 33000000 },
+                    { name: '학교지원 사업', budget: 50000000, spent: 45000000 },
+                    { name: '교육정책 연구비', budget: 25000000, spent: 22000000 },
+                    { name: '학생 안전 사업', budget: 32000000, spent: 28000000 },
+                    { name: '교육복지 사업', budget: 38000000, spent: 34000000 },
+                    { name: '평생교육 지원', budget: 22000000, spent: 20000000 },
+                    { name: '특수교육 지원', budget: 35000000, spent: 31000000 },
+                    { name: '진로진학 상담', budget: 20000000, spent: 18000000 },
+                    { name: '교육시설 관리', budget: 45000000, spent: 40000000 },
+                    { name: '교육정보 시스템', budget: 30000000, spent: 27000000 },
+                    { name: '학력향상 프로그램', budget: 15000000, spent: 13000000 }, // 급증 항목
+                    { name: '창의교육 지원', budget: 17000000, spent: 15000000 },
+                    { name: '인성교육 강화', budget: 14000000, spent: 12000000 },
+                    { name: '과학교육 진흥', budget: 22000000, spent: 19000000 },
+                    { name: '독서교육 활성화', budget: 12000000, spent: 10000000 },
+                    { name: '문화예술교육', budget: 16000000, spent: 14000000 },
+                    { name: '체육교육 진흥', budget: 19000000, spent: 17000000 }
+                    // 다문화교육 지원, 교육청 행정비는 2024년에 없었음
+                ]
+            },
+            city: {
+                name: '시청',
+                items: [
+                    { name: '시청 일반 운영비', budget: 90000000, spent: 80000000 },
+                    { name: '지역교육 협력사업', budget: 35000000, spent: 31000000 },
+                    { name: '청소년 육성사업', budget: 38000000, spent: 34000000 },
+                    { name: '문화시설 운영비', budget: 30000000, spent: 27000000 },
+                    { name: '체육시설 관리비', budget: 27000000, spent: 24000000 },
+                    { name: '도서관 운영비', budget: 24000000, spent: 21000000 },
+                    { name: '평생학습 지원', budget: 28000000, spent: 25000000 },
+                    { name: '지역축제 지원', budget: 22000000, spent: 20000000 },
+                    { name: '청소년 복지사업', budget: 33000000, spent: 30000000 },
+                    { name: '교육환경 개선', budget: 26000000, spent: 23000000 },
+                    { name: '공공시설 유지보수', budget: 38000000, spent: 34000000 },
+                    { name: '지역사회 협력', budget: 17000000, spent: 15000000 },
+                    { name: '시민교육 프로그램', budget: 20000000, spent: 18000000 },
+                    { name: '문화예술 지원', budget: 25000000, spent: 22000000 },
+                    { name: '체육진흥 사업', budget: 23000000, spent: 20000000 }
+                    // 청년정책 사업, 어린이 보호구역, 평생교육관 운영, 지역도서관 지원, 기타 시청사업은 2024년에 없었음
+                ]
+            }
+        };
+
+        // 2025년 데이터 (올해)
+        const budgetData2025 = {
+            treasury: {
+                name: '국고',
+                items: [
+                    { name: '교직원 인건비', budget: 150000000, transactions: [] },
+                    { name: '교육활동 운영비', budget: 45000000, transactions: [] },
+                    { name: '학교시설 유지보수', budget: 35000000, transactions: [] },
+                    { name: '교육자료 구입비', budget: 25000000, transactions: [] },
+                    { name: '학생복지 지원비', budget: 30000000, transactions: [] },
+                    { name: '특별교육 프로그램', budget: 20000000, transactions: [] },
+                    { name: '교육정보화 사업', budget: 28000000, transactions: [] },
+                    { name: '교육환경 개선비', budget: 32000000, transactions: [] },
+                    { name: '안전관리비', budget: 18000000, transactions: [] },
+                    { name: '교육연구비', budget: 15000000, transactions: [] },
+                    { name: '학교운영비', budget: 22000000, transactions: [] },
+                    { name: '교직원 연수비', budget: 12000000, transactions: [] },
+                    { name: '학생건강 관리비', budget: 16000000, transactions: [] },
+                    { name: '도서구입비', budget: 10000000, transactions: [] },
+                    { name: '실험실습비', budget: 14000000, transactions: [] },
+                    { name: '체육활동비', budget: 11000000, transactions: [] },
+                    { name: '예술교육비', budget: 9000000, transactions: [] },
+                    { name: '진로교육비', budget: 8000000, transactions: [] },
+                    { name: '국제교육 교류비', budget: 13000000, transactions: [] }, // 신규
+                    { name: '기타 교육지원비', budget: 7000000, transactions: [] } // 신규
+                ]
+            },
+            education: {
+                name: '교육청',
+                items: [
+                    { name: '교육청 운영비', budget: 120000000, transactions: [] },
+                    { name: '교원 연수 지원', budget: 40000000, transactions: [] },
+                    { name: '학교지원 사업', budget: 55000000, transactions: [] },
+                    { name: '교육정책 연구비', budget: 28000000, transactions: [] },
+                    { name: '학생 안전 사업', budget: 35000000, transactions: [] },
+                    { name: '교육복지 사업', budget: 42000000, transactions: [] },
+                    { name: '평생교육 지원', budget: 25000000, transactions: [] },
+                    { name: '특수교육 지원', budget: 38000000, transactions: [] },
+                    { name: '진로진학 상담', budget: 22000000, transactions: [] },
+                    { name: '교육시설 관리', budget: 48000000, transactions: [] },
+                    { name: '교육정보 시스템', budget: 32000000, transactions: [] },
+                    { name: '학력향상 프로그램', budget: 27000000, transactions: [] }, // 급증 (15M -> 27M, 80% 증가)
+                    { name: '창의교육 지원', budget: 19000000, transactions: [] },
+                    { name: '인성교육 강화', budget: 16000000, transactions: [] },
+                    { name: '과학교육 진흥', budget: 24000000, transactions: [] },
+                    { name: '독서교육 활성화', budget: 13000000, transactions: [] },
+                    { name: '문화예술교육', budget: 18000000, transactions: [] },
+                    { name: '체육교육 진흥', budget: 21000000, transactions: [] },
+                    { name: '다문화교육 지원', budget: 14000000, transactions: [] }, // 신규
+                    { name: '교육청 행정비', budget: 11000000, transactions: [] } // 신규
+                ]
+            },
+            city: {
+                name: '시청',
+                items: [
+                    { name: '시청 일반 운영비', budget: 95000000, transactions: [] },
+                    { name: '지역교육 협력사업', budget: 38000000, transactions: [] },
+                    { name: '청소년 육성사업', budget: 42000000, transactions: [] },
+                    { name: '문화시설 운영비', budget: 33000000, transactions: [] },
+                    { name: '체육시설 관리비', budget: 29000000, transactions: [] },
+                    { name: '도서관 운영비', budget: 26000000, transactions: [] },
+                    { name: '평생학습 지원', budget: 31000000, transactions: [] },
+                    { name: '지역축제 지원', budget: 24000000, transactions: [] },
+                    { name: '청소년 복지사업', budget: 36000000, transactions: [] },
+                    { name: '교육환경 개선', budget: 28000000, transactions: [] },
+                    { name: '공공시설 유지보수', budget: 41000000, transactions: [] },
+                    { name: '지역사회 협력', budget: 19000000, transactions: [] },
+                    { name: '시민교육 프로그램', budget: 22000000, transactions: [] },
+                    { name: '문화예술 지원', budget: 27000000, transactions: [] },
+                    { name: '체육진흥 사업', budget: 25000000, transactions: [] },
+                    { name: '청년정책 사업', budget: 32000000, transactions: [] }, // 신규
+                    { name: '어린이 보호구역', budget: 18000000, transactions: [] }, // 신규
+                    { name: '평생교육관 운영', budget: 23000000, transactions: [] }, // 신규
+                    { name: '지역도서관 지원', budget: 16000000, transactions: [] }, // 신규
+                    { name: '기타 시청사업', budget: 15000000, transactions: [] } // 신규
+                ]
+            }
+        };
+
+        // 현재 사용 중인 데이터 (2025년)
+        const budgetData = budgetData2025;
+
+        // 거래 내역 생성 (샘플 데이터)
+        function generateTransactions() {
+            const descriptions = [
+                '급여 지급', '장비 구매', '시설 수리', '교육 자료', '복지 지원',
+                '프로그램 운영', '연수 비용', '행사 경비', '소모품 구입', '용역비',
+                '통신비', '공과금', '보험료', '회의비', '출장비'
+            ];
+
+            Object.keys(budgetData).forEach(source => {
+                budgetData[source].items.forEach(item => {
+                    const numTransactions = Math.floor(Math.random() * 8) + 3;
+                    for (let i = 0; i < numTransactions; i++) {
+                        const month = Math.floor(Math.random() * 12) + 1;
+                        const day = Math.floor(Math.random() * 28) + 1;
+                        const amount = Math.floor((item.budget / 20) * (0.5 + Math.random()));
+
+                        item.transactions.push({
+                            date: `2025-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                            description: descriptions[Math.floor(Math.random() * descriptions.length)],
+                            amount: amount
+                        });
+                    }
+                    // 날짜순 정렬
+                    item.transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+                });
+            });
+        }
+
+        // 전년 대비 분석 함수
+        function analyzeYearOverYear() {
+            const newItems = [];
+            const surgeItems = [];
+
+            // 2024년 항목명 Set 생성 (차집합 계산을 위해)
+            const items2024BySource = {};
+            Object.keys(budgetData2024).forEach(source => {
+                items2024BySource[source] = new Set(
+                    budgetData2024[source].items.map(item => item.name)
+                );
+            });
+
+            // 2025년 항목을 순회하며 신규 항목과 급증 항목 찾기
+            Object.keys(budgetData2025).forEach(source => {
+                budgetData2025[source].items.forEach(item2025 => {
+                    const itemName = item2025.name;
+
+                    // 신규 항목 체크 (2024년에 없는 항목)
+                    if (!items2024BySource[source].has(itemName)) {
+                        const spent = calculateItemSpent(item2025);
+                        newItems.push({
+                            name: itemName,
+                            source: source,
+                            budget: item2025.budget,
+                            spent: spent,
+                            isNew: true,
+                            isSurge: false
+                        });
+                    } else {
+                        // 기존 항목 중 급증 항목 체크 (50% 이상 증가)
+                        const item2024 = budgetData2024[source].items.find(i => i.name === itemName);
+                        if (item2024) {
+                            const increase = ((item2025.budget - item2024.budget) / item2024.budget) * 100;
+                            if (increase >= 50) {
+                                const spent = calculateItemSpent(item2025);
+                                surgeItems.push({
+                                    name: itemName,
+                                    source: source,
+                                    budget: item2025.budget,
+                                    spent: spent,
+                                    budget2024: item2024.budget,
+                                    increase: increase,
+                                    isNew: false,
+                                    isSurge: true
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+
+            return { newItems, surgeItems };
+        }
+
+        // YoY 섹션 렌더링
+        function renderYoYComparison() {
+            const { newItems, surgeItems } = analyzeYearOverYear();
+            const allItems = [...newItems, ...surgeItems];
+
+            // 통계 업데이트
+            const newItemsTotal = newItems.reduce((sum, item) => sum + item.spent, 0);
+            document.getElementById('newItemsCount').textContent = newItems.length;
+            document.getElementById('newItemsTotal').textContent = formatCurrency(newItemsTotal);
+            document.getElementById('surgeItemsCount').textContent = surgeItems.length;
+
+            // 테이블 렌더링
+            const tbody = document.getElementById('comparisonTableBody');
+            tbody.innerHTML = '';
+
+            if (allItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div>전년 대비 신규 항목이 없습니다.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // 전체 예산 계산
+            const totalBudget = Object.keys(budgetData2025).reduce((sum, source) => {
+                return sum + calculateSourceTotal(source);
+            }, 0);
+
+            allItems.forEach(item => {
+                const percentage = (item.budget / totalBudget) * 100;
+                const row = document.createElement('tr');
+                row.className = item.isNew ? 'new-item' : 'surge-item';
+
+                let statusCell = '';
+                if (item.isNew) {
+                    statusCell = '<span class="new-badge">✨ 신규</span>';
+                } else if (item.isSurge) {
+                    statusCell = `<span title="전년 대비 ${item.increase.toFixed(0)}% 증가" class="warning-icon">⚠</span>`;
+                }
+
+                row.innerHTML = `
+                    <td class="item-name-cell">
+                        ${item.name}
+                    </td>
+                    <td>
+                        <span class="source-badge ${item.source}">${budgetData2025[item.source].name}</span>
+                    </td>
+                    <td class="amount-cell">${formatCurrency(item.spent)}</td>
+                    <td class="percentage-cell">${percentage.toFixed(2)}%</td>
+                    <td style="text-align: right;">${statusCell}</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        generateTransactions();
+
+        // 유틸리티 함수
+        function formatCurrency(amount) {
+            return amount.toLocaleString('ko-KR') + '원';
+        }
+
+        function formatPercent(value) {
+            return value.toFixed(1) + '%';
+        }
+
+        function calculateSourceTotal(source) {
+            return budgetData[source].items.reduce((sum, item) => sum + item.budget, 0);
+        }
+
+        function calculateSourceSpent(source) {
+            return budgetData[source].items.reduce((sum, item) => {
+                const spent = item.transactions.reduce((s, t) => s + t.amount, 0);
+                return sum + spent;
+            }, 0);
+        }
+
+        function calculateItemSpent(item) {
+            return item.transactions.reduce((sum, t) => sum + t.amount, 0);
+        }
+
+        // Summary Cards 업데이트
+        function updateSummaryCards() {
+            ['treasury', 'education', 'city'].forEach(source => {
+                const total = calculateSourceTotal(source);
+                const spent = calculateSourceSpent(source);
+                const remaining = total - spent;
+                const rate = (spent / total) * 100;
+
+                document.getElementById(`${source}-total`).textContent = formatCurrency(total);
+                document.getElementById(`${source}-spent`).textContent = formatCurrency(spent);
+                document.getElementById(`${source}-remaining`).textContent = formatCurrency(remaining);
+                document.getElementById(`${source}-progress`).style.width = rate + '%';
+            });
+        }
+
+        // Charts
+        let monthlyChart, sourceChart;
+
+        function initCharts() {
+            // 월별 지출 추이
+            const monthlyData = Array(12).fill(0);
+            Object.keys(budgetData).forEach(source => {
+                budgetData[source].items.forEach(item => {
+                    item.transactions.forEach(t => {
+                        const month = parseInt(t.date.split('-')[1]) - 1;
+                        monthlyData[month] += t.amount;
+                    });
+                });
+            });
+
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChart = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                    datasets: [{
+                        label: '월별 지출액',
+                        data: monthlyData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: '600' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function (context) {
+                                    return formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return (value / 1000000) + 'M';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 출처별 예산 비중
+            const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+            sourceChart = new Chart(sourceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['국고', '교육청', '시청'],
+                    datasets: [{
+                        data: [
+                            calculateSourceTotal('treasury'),
+                            calculateSourceTotal('education'),
+                            calculateSourceTotal('city')
+                        ],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(245, 158, 11, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 13,
+                                    weight: '500'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14, weight: '600' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function (context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percent = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percent + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Items Grid
+        let currentFilter = 'all';
+        let selectedItem = null;
+
+        function renderItems() {
+            const grid = document.getElementById('itemsGrid');
+            grid.innerHTML = '';
+
+            Object.keys(budgetData).forEach(source => {
+                if (currentFilter !== 'all' && currentFilter !== source) return;
+
+                budgetData[source].items.forEach((item, index) => {
+                    const spent = calculateItemSpent(item);
+                    const remaining = item.budget - spent;
+                    const rate = (spent / item.budget) * 100;
+
+                    const card = document.createElement('div');
+                    card.className = `item-card ${source}`;
+                    card.onclick = () => showDetail(source, index);
+                    card.innerHTML = `
+                        <div class="item-name">${item.name}</div>
+                        <div class="progress-bar" style="margin: 8px 0;">
+                            <div class="progress-fill" style="width: ${rate}%"></div>
+                        </div>
+                        <div class="item-stats">
+                            <div class="item-budget">
+                                <span class="stat-label">예산</span>
+                                <span class="stat-value">${formatCurrency(item.budget)}</span>
+                            </div>
+                            <div class="item-spent">
+                                <span class="stat-label">잔액</span>
+                                <span class="stat-value">${formatCurrency(remaining)}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+        }
+
+        // Filter Tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.source;
+                renderItems();
+            });
+        });
+
+        // Detail Panel
+        function showDetail(source, index) {
+            const item = budgetData[source].items[index];
+            const spent = calculateItemSpent(item);
+            const remaining = item.budget - spent;
+            const rate = (spent / item.budget) * 100;
+
+            selectedItem = { source, index };
+
+            document.getElementById('detailTitle').textContent = item.name;
+            document.getElementById('detail-budget').textContent = formatCurrency(item.budget);
+            document.getElementById('detail-spent').textContent = formatCurrency(spent);
+            document.getElementById('detail-remaining').textContent = formatCurrency(remaining);
+            document.getElementById('detail-rate').textContent = formatPercent(rate);
+
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
+
+            item.transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="transaction-date">${transaction.date}</td>
+                    <td class="transaction-description">${transaction.description}</td>
+                    <td class="transaction-amount amount-negative">-${formatCurrency(transaction.amount)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('detailPanel').classList.add('show');
+
+            // 선택된 카드 하이라이트
+            document.querySelectorAll('.item-card').forEach(card => card.classList.remove('active'));
+            const cards = document.querySelectorAll('.item-card');
+            let cardIndex = 0;
+            Object.keys(budgetData).forEach(s => {
+                if (currentFilter !== 'all' && currentFilter !== s) return;
+                budgetData[s].items.forEach((_, i) => {
+                    if (s === source && i === index) {
+                        cards[cardIndex].classList.add('active');
+                    }
+                    cardIndex++;
+                });
+            });
+        }
+
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('show');
+            document.querySelectorAll('.item-card').forEach(card => card.classList.remove('active'));
+            selectedItem = null;
+        }
+
+        // 초기화
+        function init() {
+            generateTransactions();
+            updateSummaryCards();
+            initCharts();
+            renderItems();
+            renderYoYComparison();
+        }
+
+        // 페이지 로드 시 실행
+        window.addEventListener('load', init);
+    </script>
+</body>
+
+</html>
